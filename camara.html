@@ -1,67 +1,71 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Cámara Visitantes</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      margin: 0;
-      padding: 20px;
-    }
-    video {
-      width: 100%;
-      max-width: 400px;
-      border-radius: 10px;
-      border: 2px solid #0066ff;
-      margin-bottom: 10px;
-    }
-    button {
-      padding: 10px 20px;
-      border: none;
-      background: #0066ff;
-      color: white;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover {
-      background: #0044aa;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cámara - Tomar Foto</title>
+    <style>
+        #view { width: 100%; border-radius: 8px; background: #000; }
+        #btn { 
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 16px;
+            background: #1a8cff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+        }
+    </style>
 </head>
 <body>
-  <video id="video" autoplay playsinline></video>
-  <button id="btnCapturar">📸 Capturar</button>
-  <canvas id="canvas" style="display:none;"></canvas>
+    <video id="view" autoplay playsinline style="display:none;"></video>
+    <button id="btn" onclick="startCamera()">📸 Activar Cámara</button>
 
-  <script>
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    const btn = document.getElementById("btnCapturar");
+    <canvas id="canvas" style="display:none;"></canvas>
 
-    // Pedir permiso a la cámara
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
-      })
-      .catch(err => console.error("No se pudo acceder a la cámara:", err));
+    <script>
+        let stream;  // Variable para almacenar el stream de la cámara
 
-    // Capturar foto y enviarla a Wix
-    btn.addEventListener("click", () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
+        // Función que activa la cámara cuando el usuario hace clic en "Activar Cámara"
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(s => {
+                    stream = s;  // Guardamos el stream de la cámara
+                    const videoElement = document.getElementById("view");
+                    videoElement.srcObject = stream;
+                    videoElement.style.display = "block"; // Mostramos el video
+                    document.getElementById("btn").innerText = "📸 Tomar Foto"; // Cambiar el texto del botón
+                    document.getElementById("btn").onclick = capture;  // Cambiar el evento para tomar la foto
+                })
+                .catch(err => {
+                    alert("Error al acceder a la cámara: " + err.message);
+                });
+        }
 
-      const fotoBase64 = canvas.toDataURL("image/png");
-      // Mandar la foto al código Wix
-      window.parent.postMessage({ type: "fotoCapturada", data: fotoBase64 }, "*");
-    });
-  </script>
+        // Función para capturar la foto
+        function capture() {
+            const video = document.getElementById("view");
+            const canvas = document.getElementById("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0);
+
+            const foto = canvas.toDataURL("image/jpeg");
+
+            // Enviar la foto al sitio Wix (si es necesario) o almacenar el Base64
+            console.log("Foto tomada", foto);
+
+            // Detener la cámara después de tomar la foto
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            // Ocultar el video y el botón
+            document.getElementById("view").style.display = "none";
+            document.getElementById("btn").style.display = "none";
+        }
+    </script>
 </body>
 </html>
